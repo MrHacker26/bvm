@@ -2,13 +2,16 @@
   "name": "bvm",
   "version": "1.0.0",
   "description": "Bun Version Manager",
-  "main": "index.js",
   "bin": {
-    "bvm": "./bin/bvm.js"
+    "bvm": "./dist/src/bvm.js"
   },
+  "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node --no-warnings --loader ts-node/esm src/bvm.ts",
+    "format": "prettier --write --ignore-path .gitignore --cache .",
+    "lint": "eslint --ext .ts src --cache",
+    "lint:fix": "eslint --ext .ts src --cache --fix"
   },
   "keywords": [
     "bun",
@@ -18,7 +21,18 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "@eslint/js": "^9.27.0",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^9.27.0",
+    "globals": "^16.1.0",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.32.1"
   }
 }
