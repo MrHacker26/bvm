@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/src/bvm.js",
-    "dev": "node --no-warnings --loader ts-node/esm src/index.ts",
+    "dev": "node --no-warnings --loader ts-node/esm src/bvm.ts",
     "format": "prettier --write --ignore-path .gitignore --cache .",
     "lint": "eslint --ext .ts src --cache",
     "lint:fix": "eslint --ext .ts src --cache --fix"
@@ -23,11 +23,14 @@
   "license": "ISC",
   "packageManager": "pnpm@10.11.0",
   "dependencies": {
+    "axios": "^1.9.0",
     "chalk": "^5.4.1",
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "unzipper": "^0.12.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
+    "@types/node": "^22.15.18",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
     "eslint": "^9.27.0",
