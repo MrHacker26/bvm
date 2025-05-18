@@ -47,6 +47,17 @@ function getPlatformTarget(): string {
   return `${process.platform}-${process.arch}`
 }
 
+function registerCleanup(dir: string): () => void {
+  async function cleanup() {
+    console.log(chalk.red('\nDownload interrupted. Cleaning up...'))
+    await cleanPath(dir, true)
+    process.exit(1)
+  }
+
+  process.once('SIGINT', cleanup)
+  return () => process.removeListener('SIGINT', cleanup)
+}
+
 export async function downloadBun(
   version: string,
   destPath: string,
@@ -57,6 +68,8 @@ export async function downloadBun(
   const destDir = dirname(destPath)
   const extractedDir = join(destDir, `bun-${target}`)
   const extractedBunPath = join(extractedDir, 'bun')
+
+  const removeCleanupListener = registerCleanup(destDir)
 
   try {
     const response = await axios.get(url, { responseType: 'stream' })
@@ -91,5 +104,7 @@ export async function downloadBun(
     )
     await cleanPath(destDir, true)
     process.exit(1)
+  } finally {
+    removeCleanupListener()
   }
 }

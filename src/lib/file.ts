@@ -1,6 +1,6 @@
 import { createWriteStream } from 'node:fs'
 import { rm, stat, unlink } from 'node:fs/promises'
-import { log } from './logger'
+import { log } from './logger.js'
 
 export async function streamToFile(
   readable: NodeJS.ReadableStream,
