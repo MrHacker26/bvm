@@ -8,7 +8,8 @@ import { log } from './logger.js'
 import { pipeline } from 'node:stream/promises'
 import unzipper from 'unzipper'
 import { chmod } from 'node:fs/promises'
-import { cleanPath, exists, streamToFile } from './file.js'
+import { cleanPath, exists, formatBytes, streamToFile } from './file.js'
+import cliProgress from 'cli-progress'
 
 export function getCurrentBunVersion(): string | null {
   try {
@@ -72,13 +73,45 @@ export async function downloadBun(
   const removeCleanupListener = registerCleanup(destDir)
 
   try {
-    const response = await axios.get(url, { responseType: 'stream' })
+    const response = await axios.get<NodeJS.ReadableStream>(url, {
+      responseType: 'stream',
+    })
 
     if (response.status !== 200) {
       throw new Error(`Failed to download ZIP file. Status: ${response.status}`)
     }
 
+    const total = Number(response.headers['content-length']) || 0
+    let downloaded = 0
+    const progress = new cliProgress.SingleBar(
+      {
+        format: `${chalk.magenta('Downloading')} {bar} {percentage}% | {downloaded}/{totalSize}`,
+        barCompleteChar: '█',
+        barIncompleteChar: '░',
+        hideCursor: true,
+      },
+      cliProgress.Presets.shades_classic,
+    )
+
+    if (total) {
+      progress.start(total, 0, {
+        downloaded: '0 B',
+        totalSize: formatBytes(total),
+      })
+    }
+
+    response.data.on('data', (chunk: Buffer) => {
+      downloaded += chunk.length
+      if (total) {
+        progress.update(downloaded, {
+          downloaded: formatBytes(downloaded),
+          totalSize: formatBytes(total),
+        })
+      }
+    })
+
     await streamToFile(response.data, zipPath)
+    if (total) progress.stop()
 
     log.log(chalk.yellow('📦 Extracting...'))
 
