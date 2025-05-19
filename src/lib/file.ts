@@ -65,13 +65,13 @@ export function removeExistingLink(path: string): void {
     const isSymlink = lstatSync(path).isSymbolicLink()
     try {
       rmSync(path)
+      if (!isSymlink) {
+        log.warn(`Replaced a non-symlink file at ${path}`)
+      }
     } catch (error) {
       log.warn(
         `Couldn't remove existing file at ${path}: ${(error as Error).message}`,
       )
-    }
-    if (!isSymlink) {
-      log.warn(`Replaced a non-symlink file at ${path}`)
     }
   }
 }
