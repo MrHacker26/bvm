@@ -1,6 +1,12 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+export const BUN_DIR = join(homedir(), '.bun')
+
+export const BUN_BIN_DIR = join(BUN_DIR, 'bin')
+
+export const BUN_SYMLINK = join(BUN_BIN_DIR, 'bun')
+
 export const BVM_DIR = join(homedir(), '.bvm')
 
 export const BUN_VERSIONS_DIR = join(BVM_DIR, 'versions')
