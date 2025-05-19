@@ -1,4 +1,10 @@
-import { createWriteStream } from 'node:fs'
+import {
+  createWriteStream,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  rmSync,
+} from 'node:fs'
 import { rm, stat, unlink } from 'node:fs/promises'
 import { log } from './logger.js'
 
@@ -46,4 +52,26 @@ export function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
+}
+
+export function ensureDirectoryExists(dir: string): void {
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+}
+
+export function removeExistingLink(path: string): void {
+  if (existsSync(path)) {
+    const isSymlink = lstatSync(path).isSymbolicLink()
+    try {
+      rmSync(path)
+    } catch (error) {
+      log.warn(
+        `Couldn't remove existing file at ${path}: ${(error as Error).message}`,
+      )
+    }
+    if (!isSymlink) {
+      log.warn(`Replaced a non-symlink file at ${path}`)
+    }
+  }
 }
