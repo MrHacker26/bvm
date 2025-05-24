@@ -2,7 +2,12 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { log } from './logger.js'
 import { readFile, writeFile } from 'node:fs/promises'
-import { BUN_COMPLETION_FILE, BUN_DIR, BUN_SYMLINK } from './constants.js'
+import {
+  BUN_COMPLETION_FILE,
+  BUN_DIR,
+  BUN_SYMLINK,
+  FISH_CONFIG_PATH,
+} from './constants.js'
 import { exists } from './file.js'
 import { execSync } from 'node:child_process'
 import { Shell } from './types'
@@ -69,53 +74,76 @@ export function getShellConfigPath(shell: Shell): string[] {
   }
 }
 
+async function configureFish(): Promise<void> {
+  const fishLines = [
+    `set --export BUN_INSTALL "${BUN_DIR}"`,
+    `set --export PATH "$BUN_INSTALL/bin" $PATH`,
+  ]
+
+  if (await exists(FISH_CONFIG_PATH)) {
+    try {
+      const content = await readFile(FISH_CONFIG_PATH, 'utf8')
+      const missingLines = fishLines.filter((line) => !content.includes(line))
+
+      if (missingLines.length > 0) {
+        const newContent = content + `\n# bun\n${missingLines.join('\n')}\n`
+        await writeFile(FISH_CONFIG_PATH, newContent)
+        log.success(`Updated ${FISH_CONFIG_PATH} with Bun configuration`)
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log.warn(`Could not update Fish config: ${message}`)
+    }
+  } else {
+    log.warn(
+      'Fish config file not found. Please add Bun configuration manually.',
+    )
+  }
+}
+
 async function configureShell(shell: Shell): Promise<void> {
+  if (!shell) {
+    log.warn('Invalid shell provided')
+    return
+  }
+
+  if (shell === 'fish') {
+    await configureFish()
+    return
+  }
+
   const bunInstallLine = `export BUN_INSTALL="${BUN_DIR}"\n`
   const pathLine = `export PATH="$BUN_INSTALL/bin:$PATH"\n`
   const completionLine = `[ -s "${BUN_COMPLETION_FILE}" ] && source "${BUN_COMPLETION_FILE}"\n`
-
-  if (shell === 'fish') {
-    const configFile = join(homedir(), '.config', 'fish', 'config.fish')
-    const fishLines = [
-      `set --export BUN_INSTALL "${BUN_DIR}"`,
-      `set --export PATH "$BUN_INSTALL/bin" $PATH`,
-    ]
-    if (await exists(configFile)) {
-      const content = await readFile(configFile, 'utf8')
-      const missingLines = fishLines.filter((line) => !content.includes(line))
-      if (missingLines.length) {
-        await writeFile(configFile, `\n# bun\n${missingLines.join('\n')}\n`, {
-          flag: 'a',
-        })
-        log.success(`Updated ${configFile} with Bun config`)
-      }
-    }
-    return
-  }
 
   const configPaths = getShellConfigPath(shell)
 
   for (const configPath of configPaths) {
     if (await exists(configPath)) {
-      const content = await readFile(configPath, 'utf8')
-      let updated = false
-      let newContent = content
+      try {
+        const content = await readFile(configPath, 'utf8')
+        let updated = false
+        let newContent = content
 
-      if (!content.includes('BUN_INSTALL')) {
-        newContent += `\n# bun\n${bunInstallLine}${pathLine}`
-        updated = true
-      }
+        if (!content.includes('BUN_INSTALL')) {
+          newContent += `\n# bun\n${bunInstallLine}${pathLine}`
+          updated = true
+        }
 
-      if (!content.includes(BUN_COMPLETION_FILE)) {
-        newContent += `\n# bun completions\n${completionLine}`
-        updated = true
-      }
+        if (!content.includes(BUN_COMPLETION_FILE)) {
+          newContent += `\n# bun completions\n${completionLine}`
+          updated = true
+        }
 
-      if (updated) {
-        await writeFile(configPath, newContent)
-        log.success(`Updated ${configPath} with Bun configuration`)
+        if (updated) {
+          await writeFile(configPath, newContent)
+          log.success(`Updated ${configPath} with Bun configuration`)
+        }
+        return
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        log.warn(`Could not update ${configPath}: ${message}`)
       }
-      return
     }
   }
 
