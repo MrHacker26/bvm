@@ -1,14 +1,14 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { log } from './logger.js'
+import { log } from './logger'
 import { readFile, writeFile } from 'node:fs/promises'
 import {
   BUN_COMPLETION_FILE,
   BUN_DIR,
   BUN_SYMLINK,
   FISH_CONFIG_PATH,
-} from './constants.js'
-import { exists } from './file.js'
+} from './constants'
+import { exists } from './file'
 import { execSync } from 'node:child_process'
 import { Shell } from './types'
 

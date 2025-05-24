@@ -2,9 +2,9 @@ import {
   formatVersionInfo,
   getCurrentBunVersion,
   getInstalledBunVersions,
-} from '../lib/utils.js'
-import { GITHUB_RELEASES_URL } from '../lib/constants.js'
-import { log } from '../lib/logger.js'
+} from '../lib/utils'
+import { GITHUB_RELEASES_URL } from '../lib/constants'
+import { log } from '../lib/logger'
 import chalk from 'chalk'
 import axios from 'axios'
 

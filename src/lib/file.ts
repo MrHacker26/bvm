@@ -7,7 +7,7 @@ import {
   symlinkSync,
 } from 'node:fs'
 import { rm, stat, unlink } from 'node:fs/promises'
-import { log } from './logger.js'
+import { log } from './logger'
 
 export async function streamToFile(
   readable: NodeJS.ReadableStream,

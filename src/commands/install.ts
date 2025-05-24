@@ -6,12 +6,12 @@ import {
   BUN_BIN_DIR,
   BUNX_SYMLINK,
   BUN_SYMLINK,
-} from '../lib/constants.js'
-import { log } from '../lib/logger.js'
-import { downloadBun } from '../lib/utils.js'
-import { ensureDirectoryExists } from '../lib/file.js'
-import { useVersion } from './use.js'
-import { autoConfigureShell } from '../lib/shell.js'
+} from '../lib/constants'
+import { log } from '../lib/logger'
+import { downloadBun } from '../lib/utils'
+import { ensureDirectoryExists } from '../lib/file'
+import { useVersion } from './use'
+import { autoConfigureShell } from '../lib/shell'
 
 export async function installBun(version: string): Promise<void> {
   const versionDir = join(BUN_VERSIONS_DIR, version)

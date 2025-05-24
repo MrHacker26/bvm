@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander'
-import { installBun } from './commands/install.js'
-import { useVersion } from './commands/use.js'
-import { listRemoteVersions, listVersions } from './commands/versions.js'
-import { uninstallBun } from './commands/uninstall.js'
+import { installBun } from './commands/install'
+import { useVersion } from './commands/use'
+import { listRemoteVersions, listVersions } from './commands/versions'
+import { uninstallBun } from './commands/uninstall'
 
 const program = new Command()
 

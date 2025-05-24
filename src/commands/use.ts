@@ -1,15 +1,15 @@
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import chalk from 'chalk'
-import { log } from '../lib/logger.js'
+import { log } from '../lib/logger'
 import {
   BUN_BIN_DIR,
   BUN_SYMLINK,
   BUN_VERSIONS_DIR,
   BUNX_SYMLINK,
-} from '../lib/constants.js'
-import { createSymlink, ensureDirectoryExists } from '../lib/file.js'
-import { setupCompletions } from '../lib/shell.js'
+} from '../lib/constants'
+import { createSymlink, ensureDirectoryExists } from '../lib/file'
+import { setupCompletions } from '../lib/shell'
 
 export async function useVersion(version: string): Promise<void> {
   const versionBin = join(BUN_VERSIONS_DIR, version, 'bun')

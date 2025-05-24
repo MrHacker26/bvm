@@ -1,14 +1,14 @@
 import { execSync } from 'node:child_process'
 import { createReadStream, existsSync, readdirSync } from 'node:fs'
-import { BUN_VERSIONS_DIR } from './constants.js'
+import { BUN_VERSIONS_DIR } from './constants'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
 import axios from 'axios'
-import { log } from './logger.js'
+import { log } from './logger'
 import { pipeline } from 'node:stream/promises'
 import unzipper from 'unzipper'
 import { chmod } from 'node:fs/promises'
-import { cleanPath, exists, formatBytes, streamToFile } from './file.js'
+import { cleanPath, exists, formatBytes, streamToFile } from './file'
 import cliProgress from 'cli-progress'
 
 export function getCurrentBunVersion(): string | null {
