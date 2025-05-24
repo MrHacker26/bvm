@@ -5,13 +5,14 @@ import { installBun } from './commands/install'
 import { useVersion } from './commands/use'
 import { listRemoteVersions, listVersions } from './commands/versions'
 import { uninstallBun } from './commands/uninstall'
+import { version } from '../package.json'
 
 const program = new Command()
 
 program
   .name('bvm')
   .description('Bun Version Manager - Manage multiple Bun versions')
-  .version('1.0.0')
+  .version(version)
 
 program
   .command('install <version>')
