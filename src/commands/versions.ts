@@ -1,5 +1,5 @@
 import {
-  formatVersionStr,
+  formatVersionInfo,
   getCurrentBunVersion,
   getInstalledBunVersions,
 } from '../lib/utils.js'
@@ -24,7 +24,7 @@ export function listVersions(): void {
 
     log.log(chalk.green('🚀 Installed Bun versions:\n'))
     versions.forEach((version) => {
-      log.log(formatVersionStr(version, currentVersion, new Set(versions)))
+      log.log(formatVersionInfo(version, currentVersion, new Set(versions)))
     })
   } catch {
     log.error('No Bun versions installed yet.')
@@ -47,7 +47,7 @@ export async function listRemoteVersions(): Promise<void> {
 
     log.log(chalk.green('🚀 Available Bun versions:\n'))
     versions.forEach((version) => {
-      log.log(formatVersionStr(version, activeVersion, installedVersionsSet))
+      log.log(formatVersionInfo(version, activeVersion, installedVersionsSet))
     })
   } catch (err) {
     log.error(

@@ -1,13 +1,18 @@
 import { execSync } from 'node:child_process'
 import { createReadStream, existsSync, readdirSync } from 'node:fs'
-import { BUN_VERSIONS_DIR } from './constants.js'
+import {
+  BUN_COMPLETION_FILE,
+  BUN_DIR,
+  BUN_VERSIONS_DIR,
+  SHELL_CONFIGS,
+} from './constants.js'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
 import axios from 'axios'
 import { log } from './logger.js'
 import { pipeline } from 'node:stream/promises'
 import unzipper from 'unzipper'
-import { chmod } from 'node:fs/promises'
+import { chmod, readFile, writeFile } from 'node:fs/promises'
 import { cleanPath, exists, formatBytes, streamToFile } from './file.js'
 import cliProgress from 'cli-progress'
 
@@ -27,21 +32,23 @@ export function getInstalledBunVersions(): string[] {
   return existsSync(BUN_VERSIONS_DIR) ? readdirSync(BUN_VERSIONS_DIR) : []
 }
 
-export function formatVersionStr(
+export function formatVersionInfo(
   version: string,
   currentVersion: string | null,
-  installedVersionsSet: Set<string>,
-) {
+  installedVersions: Set<string>,
+): string {
   const isActive = currentVersion === version
-  const installed = installedVersionsSet.has(version)
+  const isInstalled = installedVersions.has(version)
 
   if (isActive) {
-    return `  ${chalk.magenta('v' + version)} (current) ${chalk.yellow('⭐')}`
+    return `${chalk.magenta('v' + version)} ${chalk.yellow('⭐ (current)')}`
   }
-  if (installed) {
-    return `  ${chalk.magenta('v' + version)} ${chalk.green('(installed)')}`
+
+  if (isInstalled) {
+    return `${chalk.magenta('v' + version)} ${chalk.green('✓ (installed)')}`
   }
-  return `  ${chalk.magenta('v' + version)} ${chalk.red('(not installed)')}`
+
+  return `${chalk.magenta('v' + version)} ${chalk.red('✗ (not installed)')}`
 }
 
 function getPlatformTarget(): string {
@@ -130,7 +137,7 @@ export async function downloadBun(
     await cleanPath(extractedDir, true)
     await cleanPath(zipPath)
 
-    log.success(`Installed Bun ${chalk.bold(`v${version}`)}`)
+    log.success(`Downloaded Bun ${chalk.bold(`v${version}`)}`)
   } catch (error) {
     log.error(
       `Failed to install Bun: ${error instanceof Error ? error.message : error}`,
@@ -139,5 +146,58 @@ export async function downloadBun(
     process.exit(1)
   } finally {
     removeCleanupListener()
+  }
+}
+
+export async function setupCompletions(shell: 'zsh' | 'bash'): Promise<void> {
+  const bunPath = join(BUN_DIR, 'bin', 'bun')
+
+  if (!(await exists(bunPath))) {
+    log.error(`Bun binary not found at ${bunPath}, skipping completions`)
+    return
+  }
+
+  try {
+    execSync(`${bunPath} completions`, {
+      env: {
+        ...process.env,
+        IS_BUN_AUTO_UPDATE: 'true',
+        SHELL: shell,
+      },
+      stdio: 'ignore',
+    })
+  } catch (error) {
+    log.error(`Failed to set up ${shell} completions: ${error}`)
+  }
+}
+
+export async function configureShell(shell: 'zsh' | 'bash'): Promise<void> {
+  const configFile = SHELL_CONFIGS[shell]
+  const bunInstallLine = `export BUN_INSTALL="${BUN_DIR}"\n`
+  const pathLine = `export PATH="$BUN_INSTALL/bin:$PATH"\n`
+  const completionLine = `[ -s "${BUN_COMPLETION_FILE}" ] && source "${BUN_COMPLETION_FILE}"\n`
+
+  const configPaths = Array.isArray(configFile) ? configFile : [configFile]
+
+  for (const configPath of configPaths) {
+    if (await exists(configPath)) {
+      const content = await readFile(configPath, 'utf8')
+      let newContent = content
+
+      if (!content.includes('BUN_INSTALL')) {
+        newContent += `\n# Bun\n${bunInstallLine}${pathLine}`
+      }
+      if (!content.includes(BUN_COMPLETION_FILE)) {
+        newContent += `\n# Bun completions\n${completionLine}`
+      }
+
+      if (newContent !== content) {
+        await writeFile(configPath, newContent)
+        log.success(
+          `Updated ${configPath} with Bun configuration and completions`,
+        )
+        break
+      }
+    }
   }
 }

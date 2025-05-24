@@ -4,6 +4,7 @@ import {
   lstatSync,
   mkdirSync,
   rmSync,
+  symlinkSync,
 } from 'node:fs'
 import { rm, stat, unlink } from 'node:fs/promises'
 import { log } from './logger.js'
@@ -11,7 +12,7 @@ import { log } from './logger.js'
 export async function streamToFile(
   readable: NodeJS.ReadableStream,
   path: string,
-) {
+): Promise<void> {
   const writer = createWriteStream(path)
   await new Promise<void>((resolve, reject) => {
     writer.on('finish', resolve)
@@ -31,17 +32,19 @@ export async function exists(path: string): Promise<boolean> {
 
 export async function cleanPath(
   path: string,
-  isDir: boolean = false,
+  isDirectory = false,
 ): Promise<void> {
   try {
-    await stat(path)
-    if (isDir) {
-      await rm(path, { recursive: true, force: true })
-    } else {
-      await unlink(path)
+    if (await exists(path)) {
+      if (isDirectory) {
+        await rm(path, { recursive: true, force: true })
+      } else {
+        await unlink(path)
+      }
     }
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException
+    if (err.code !== 'ENOENT') {
       log.warn(`Failed to clean path: ${path}`)
     }
   }
@@ -64,14 +67,21 @@ export function removeExistingLink(path: string): void {
   if (existsSync(path)) {
     const isSymlink = lstatSync(path).isSymbolicLink()
     try {
-      rmSync(path)
+      rmSync(path, { force: true })
       if (!isSymlink) {
-        log.warn(`Replaced a non-symlink file at ${path}`)
+        log.warn(`Replaced non-symlink file at ${path}`)
       }
     } catch (error) {
       log.warn(
         `Couldn't remove existing file at ${path}: ${(error as Error).message}`,
       )
     }
+  }
+}
+
+export function createSymlink(src: string, dest: string): void {
+  if (existsSync(src)) {
+    removeExistingLink(dest)
+    symlinkSync(src, dest)
   }
 }
