@@ -18,19 +18,3 @@ export const GITHUB_API_URL = 'https://api.github.com'
 export const GITHUB_RELEASES_URL = `${GITHUB_API_URL}/repos/oven-sh/bun/releases`
 
 export const BUN_COMPLETION_FILE = join(BUN_DIR, '_bun')
-
-export const SHELL_CONFIGS = {
-  zsh: join(homedir(), '.zshrc'),
-  bash: [
-    join(homedir(), '.bashrc'),
-    join(homedir(), '.bash_profile'),
-    ...(process.env.XDG_CONFIG_HOME
-      ? [
-          join(process.env.XDG_CONFIG_HOME, '.bash_profile'),
-          join(process.env.XDG_CONFIG_HOME, '.bashrc'),
-          join(process.env.XDG_CONFIG_HOME, 'bash_profile'),
-          join(process.env.XDG_CONFIG_HOME, 'bashrc'),
-        ]
-      : []),
-  ],
-}

@@ -9,7 +9,7 @@ import {
   BUNX_SYMLINK,
 } from '../lib/constants.js'
 import { createSymlink, ensureDirectoryExists } from '../lib/file.js'
-import { setupCompletions } from '../lib/utils.js'
+import { setupCompletions } from '../lib/shell.js'
 
 export async function useVersion(version: string): Promise<void> {
   const versionBin = join(BUN_VERSIONS_DIR, version, 'bun')
@@ -24,7 +24,7 @@ export async function useVersion(version: string): Promise<void> {
     ensureDirectoryExists(BUN_BIN_DIR)
     createSymlink(versionBin, BUN_SYMLINK)
     createSymlink(versionBin, BUNX_SYMLINK)
-    await setupCompletions('zsh')
+    await setupCompletions()
 
     log.success(`Now using Bun ${version}`)
   } catch (err) {

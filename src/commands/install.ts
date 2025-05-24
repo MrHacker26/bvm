@@ -8,9 +8,10 @@ import {
   BUN_SYMLINK,
 } from '../lib/constants.js'
 import { log } from '../lib/logger.js'
-import { downloadBun, configureShell } from '../lib/utils.js'
+import { downloadBun } from '../lib/utils.js'
 import { ensureDirectoryExists } from '../lib/file.js'
 import { useVersion } from './use.js'
+import { autoConfigureShell } from '../lib/shell.js'
 
 export async function installBun(version: string): Promise<void> {
   const versionDir = join(BUN_VERSIONS_DIR, version)
@@ -35,8 +36,7 @@ export async function installBun(version: string): Promise<void> {
     ensureDirectoryExists(BUN_BIN_DIR)
 
     try {
-      await configureShell('zsh')
-      await configureShell('bash')
+      await autoConfigureShell()
     } catch (err) {
       log.error(
         `Failed to configure shell: ${(err as Error).message}. Please set up completions manually.`,
