@@ -10,7 +10,7 @@
   "module": "./dist/index.js",
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "tsx src/bvm.ts",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm run clean && pnpm run build",
     "start": "node dist/bvm.js",
@@ -50,6 +50,7 @@
     "globals": "^16.1.0",
     "prettier": "^3.5.3",
     "tsup": "^8.5.0",
+    "tsx": "^4.19.4",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.32.1"
   }
