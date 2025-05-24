@@ -1,5 +1,5 @@
 {
-  "name": "bvm",
+  "name": "bunvm",
   "version": "1.0.0",
   "description": "Bun Version Manager - Switch between different versions of Bun easily",
   "bin": {
@@ -29,8 +29,19 @@
     "typescript",
     "nodejs"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Tarun Joshi",
+  "license": "MIT",
+  "homepage": "https://github.com/MrHacker26/bvm#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrHacker26/bvm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MrHacker26/bvm/issues"
+  },
+  "files": [
+    "dist"
+  ],
   "packageManager": "pnpm@10.11.0",
   "dependencies": {
     "axios": "^1.9.0",
