@@ -1,18 +1,13 @@
 import { execSync } from 'node:child_process'
 import { createReadStream, existsSync, readdirSync } from 'node:fs'
-import {
-  BUN_COMPLETION_FILE,
-  BUN_DIR,
-  BUN_VERSIONS_DIR,
-  SHELL_CONFIGS,
-} from './constants.js'
+import { BUN_VERSIONS_DIR } from './constants.js'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
 import axios from 'axios'
 import { log } from './logger.js'
 import { pipeline } from 'node:stream/promises'
 import unzipper from 'unzipper'
-import { chmod, readFile, writeFile } from 'node:fs/promises'
+import { chmod } from 'node:fs/promises'
 import { cleanPath, exists, formatBytes, streamToFile } from './file.js'
 import cliProgress from 'cli-progress'
 
@@ -146,58 +141,5 @@ export async function downloadBun(
     process.exit(1)
   } finally {
     removeCleanupListener()
-  }
-}
-
-export async function setupCompletions(shell: 'zsh' | 'bash'): Promise<void> {
-  const bunPath = join(BUN_DIR, 'bin', 'bun')
-
-  if (!(await exists(bunPath))) {
-    log.error(`Bun binary not found at ${bunPath}, skipping completions`)
-    return
-  }
-
-  try {
-    execSync(`${bunPath} completions`, {
-      env: {
-        ...process.env,
-        IS_BUN_AUTO_UPDATE: 'true',
-        SHELL: shell,
-      },
-      stdio: 'ignore',
-    })
-  } catch (error) {
-    log.error(`Failed to set up ${shell} completions: ${error}`)
-  }
-}
-
-export async function configureShell(shell: 'zsh' | 'bash'): Promise<void> {
-  const configFile = SHELL_CONFIGS[shell]
-  const bunInstallLine = `export BUN_INSTALL="${BUN_DIR}"\n`
-  const pathLine = `export PATH="$BUN_INSTALL/bin:$PATH"\n`
-  const completionLine = `[ -s "${BUN_COMPLETION_FILE}" ] && source "${BUN_COMPLETION_FILE}"\n`
-
-  const configPaths = Array.isArray(configFile) ? configFile : [configFile]
-
-  for (const configPath of configPaths) {
-    if (await exists(configPath)) {
-      const content = await readFile(configPath, 'utf8')
-      let newContent = content
-
-      if (!content.includes('BUN_INSTALL')) {
-        newContent += `\n# Bun\n${bunInstallLine}${pathLine}`
-      }
-      if (!content.includes(BUN_COMPLETION_FILE)) {
-        newContent += `\n# Bun completions\n${completionLine}`
-      }
-
-      if (newContent !== content) {
-        await writeFile(configPath, newContent)
-        log.success(
-          `Updated ${configPath} with Bun configuration and completions`,
-        )
-        break
-      }
-    }
   }
 }
