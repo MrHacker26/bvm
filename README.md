@@ -2,8 +2,6 @@
 
 **BVM** is a simple and fast CLI tool to manage multiple versions of [Bun](https://bun.sh), the all-in-one JavaScript runtime. Inspired by tools like `nvm` and `rvm`, BVM lets you easily install, switch, and manage different Bun versions.
 
-> ⚠️ Currently in active development – contributions and feedback are welcome!
-
 ---
 
 ## 🚀 Features
@@ -33,21 +31,23 @@
 
 ## 📦 Installation
 
-### Install from npm (Coming Soon)
+### Install from npm 
 
 ```bash
 # With npm
-npm install -g bvm
+npm install -g bunvm
 
 # With pnpm (recommended)
-pnpm add -g bvm
+pnpm add -g bunvm
 
 # With yarn
-yarn global add bvm
+yarn global add bunvm
 
-# Bun 
-bun add -g bvm
+# With Bun
+bun add -g bunvm
 ```
+
+After installation, you can use the `bvm` command from anywhere in your terminal.
 
 ### Install from source
 
