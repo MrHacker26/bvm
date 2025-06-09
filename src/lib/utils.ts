@@ -47,7 +47,16 @@ export function formatVersionInfo(
 }
 
 function getPlatformTarget(): string {
-  return `${process.platform}-${process.arch}`
+  const targetPlatform = `${process.platform}-${process.arch}`
+
+  switch (targetPlatform) {
+    case 'darwin-arm64': {
+      return 'darwin-aarch64'
+    }
+    default: {
+      return targetPlatform
+    }
+  }
 }
 
 function registerCleanup(dir: string): () => void {
