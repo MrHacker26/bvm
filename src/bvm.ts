@@ -3,7 +3,11 @@
 import { Command } from 'commander'
 import { installBun } from './commands/install'
 import { useVersion } from './commands/use'
-import { listRemoteVersions, listVersions } from './commands/versions'
+import {
+  listRemoteVersions,
+  listVersions,
+  currentVersion,
+} from './commands/versions'
 import { uninstallBun } from './commands/uninstall'
 import { version } from '../package.json'
 
@@ -30,6 +34,11 @@ program
   .alias('u')
   .description('Uninstall a specific Bun version')
   .action(uninstallBun)
+
+program
+  .command('current')
+  .description('Display currently activated version of Bun')
+  .action(currentVersion)
 
 program
   .command('list')

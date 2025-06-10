@@ -13,7 +13,7 @@ type Release = { tag_name: string }
 export function listVersions(): void {
   try {
     const currentVersion = getCurrentBunVersion()
-    log.log(`Current Bun version: ${currentVersion ?? 'none'}`)
+    log.log(`Current Bun version: v${currentVersion ?? 'none'}`)
 
     const versions = getInstalledBunVersions()
 
@@ -54,4 +54,15 @@ export async function listRemoteVersions(): Promise<void> {
       `Error fetching remote versions: ${err instanceof Error ? err.message : err}`,
     )
   }
+}
+
+export function currentVersion(): void {
+  const version = getCurrentBunVersion()
+
+  if (version === null) {
+    log.error('Bun is not installed.')
+    return
+  }
+
+  log.log(`Current Bun version: v${version}`)
 }
