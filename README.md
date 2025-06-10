@@ -67,6 +67,7 @@ Once installed, you can use `bvm` from anywhere in your terminal:
 
 ```bash
 bvm install <version>     # Install a specific Bun version (alias: i)
+bvm install latest        # Install the latest Bun version
 bvm use <version>         # Set a specific Bun version as active
 bvm uninstall <version>   # Remove an installed version (alias: u)
 bvm list                  # List installed Bun versions (alias: ls)
@@ -80,6 +81,9 @@ bvm --help                # Show help information
 
 ```bash
 # Install the latest Bun version
+bvm install latest
+
+# Install a specific Bun version
 bvm install 1.0.12
 # or use alias
 bvm i 1.0.12
