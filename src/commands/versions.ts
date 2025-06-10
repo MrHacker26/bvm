@@ -7,8 +7,7 @@ import { GITHUB_RELEASES_URL } from '../lib/constants'
 import { log } from '../lib/logger'
 import chalk from 'chalk'
 import axios from 'axios'
-
-type Release = { tag_name: string }
+import { Release } from '../lib/types'
 
 export function listVersions(): void {
   try {

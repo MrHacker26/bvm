@@ -8,12 +8,22 @@ import {
   BUN_SYMLINK,
 } from '../lib/constants'
 import { log } from '../lib/logger'
-import { downloadBun } from '../lib/utils'
+import { downloadBun, getLatestBunVersion } from '../lib/utils'
 import { ensureDirectoryExists } from '../lib/file'
 import { useVersion } from './use'
 import { autoConfigureShell } from '../lib/shell'
 
 export async function installBun(version: string): Promise<void> {
+  if (version === 'latest') {
+    const latestVersion = await getLatestBunVersion()
+
+    if (!latestVersion) {
+      return
+    }
+
+    version = latestVersion
+  }
+
   const versionDir = join(BUN_VERSIONS_DIR, version)
   const bunBinaryPath = join(versionDir, 'bun')
 
