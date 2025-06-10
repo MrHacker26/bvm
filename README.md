@@ -22,7 +22,7 @@
 | Platform | Status | Tested |
 |----------|--------|---------|
 | Linux    | ✅ Supported | ✅ Tested on Ubuntu/Debian |
-| macOS    | ⚠️ Should work | ❓ Not tested yet |
+| macOS    | ✅ Supported | ✅ Tested on M2 (Apple Silicon) |
 | Windows  | ❓ Unknown | ❓ Not tested yet |
 
 **Note**: BVM has been tested and works on Linux systems. macOS support should work but hasn't been tested yet. Windows support is planned but not implemented.
