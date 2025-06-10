@@ -13,7 +13,9 @@ type Release = { tag_name: string }
 export function listVersions(): void {
   try {
     const currentVersion = getCurrentBunVersion()
-    log.log(`Current Bun version: v${currentVersion ?? 'none'}`)
+    log.log(
+      `Current Bun version: ${currentVersion ? `v${currentVersion}` : 'none'}`,
+    )
 
     const versions = getInstalledBunVersions()
 
