@@ -31,7 +31,7 @@
 
 ## 📦 Installation
 
-### Install from npm 
+### Install from npm
 
 ```bash
 # With npm
@@ -69,6 +69,7 @@ Once installed, you can use `bvm` from anywhere in your terminal:
 bvm install <version>     # Install a specific Bun version (alias: i)
 bvm use <version>         # Set a specific Bun version as active
 bvm uninstall <version>   # Remove an installed version (alias: u)
+bvm current               # Display currently activated version of Bun
 bvm list                  # List installed Bun versions (alias: ls)
 bvm remote                # List available remote Bun versions (alias: r)
 bvm --help                # Show help information
@@ -106,7 +107,7 @@ bvm u 1.0.11        # or use alias
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm (recommended) or npm
 
 ### Setup
