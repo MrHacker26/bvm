@@ -62,7 +62,9 @@ export function currentVersion(): void {
   const version = getCurrentBunVersion()
 
   if (version === null) {
-    log.error('Bun is not installed.')
+    log.error(
+      'No Bun version is currently active. Install one with: bvm install <version>',
+    )
     return
   }
 
