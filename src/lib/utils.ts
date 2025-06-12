@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process'
 import { createReadStream, existsSync, readdirSync } from 'node:fs'
-import { BUN_VERSIONS_DIR } from './constants'
+import { BUN_VERSIONS_DIR, GITHUB_RELEASES_URL } from './constants'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
 import axios from 'axios'
@@ -10,6 +10,7 @@ import unzipper from 'unzipper'
 import { chmod } from 'node:fs/promises'
 import { cleanPath, exists, formatBytes, streamToFile } from './file'
 import cliProgress from 'cli-progress'
+import { Release } from './types'
 
 export function getCurrentBunVersion(): string | null {
   try {
@@ -25,6 +26,24 @@ export function getCurrentBunVersion(): string | null {
 
 export function getInstalledBunVersions(): string[] {
   return existsSync(BUN_VERSIONS_DIR) ? readdirSync(BUN_VERSIONS_DIR) : []
+}
+
+export async function getLatestBunVersion(): Promise<string | null> {
+  try {
+    const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
+
+    if (data.length === 0) {
+      log.warn('No Bun versions found.')
+      return null
+    }
+
+    const latestVersion = data[0].tag_name.replace(/^bun-v/, '')
+
+    return latestVersion
+  } catch {
+    log.error('Error fetching latest Bun version.')
+    process.exit(1)
+  }
 }
 
 export function formatVersionInfo(
