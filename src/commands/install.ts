@@ -26,9 +26,11 @@ export async function installBun(version: string): Promise<void> {
 
   const versionDir = join(BUN_VERSIONS_DIR, version)
   const bunBinaryPath = join(versionDir, 'bun')
+  const hasActiveSymlinks = existsSync(BUN_SYMLINK) && existsSync(BUNX_SYMLINK)
 
   if (existsSync(versionDir) && existsSync(bunBinaryPath)) {
     log.warn(`Bun ${chalk.green(`v${version}`)} is already installed.`)
+    await useVersion(version)
     return
   }
 
@@ -38,7 +40,7 @@ export async function installBun(version: string): Promise<void> {
 
   await downloadBun(version, bunBinaryPath)
 
-  if (!existsSync(BUN_SYMLINK) || !existsSync(BUNX_SYMLINK)) {
+  if (!hasActiveSymlinks) {
     log.warn(
       `No previously installed Bun versions found. Setting up environment...`,
     )
@@ -58,4 +60,5 @@ export async function installBun(version: string): Promise<void> {
   }
 
   log.success(`Installed Bun ${chalk.bold(`v${version}`)}`)
+  await useVersion(version)
 }
