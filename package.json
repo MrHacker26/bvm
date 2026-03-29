@@ -16,7 +16,10 @@
     "start": "node dist/bvm.js",
     "format": "prettier --write --ignore-path .gitignore --cache .",
     "lint": "eslint --ext .ts src --cache",
-    "lint:fix": "eslint --ext .ts src --cache --fix"
+    "lint:fix": "eslint --ext .ts src --cache --fix",
+    "release": "pnpm lint && pnpm format && pnpm version patch && git push --follow-tags && pnpm publish",
+    "release:minor": "pnpm version minor && git push --follow-tags && pnpm publish",
+    "release:major": "pnpm version major && git push --follow-tags && pnpm publish"
   },
   "keywords": [
     "bun",
