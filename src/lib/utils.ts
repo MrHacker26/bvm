@@ -25,7 +25,11 @@ export function getCurrentBunVersion(): string | null {
 }
 
 export function getInstalledBunVersions(): string[] {
-  return existsSync(BUN_VERSIONS_DIR) ? readdirSync(BUN_VERSIONS_DIR) : []
+  if (!existsSync(BUN_VERSIONS_DIR)) {
+    return []
+  }
+
+  return readdirSync(BUN_VERSIONS_DIR).sort(compareSemverDesc)
 }
 
 export async function getLatestBunVersion(): Promise<string | null> {
@@ -170,4 +174,24 @@ export async function downloadBun(
   } finally {
     removeCleanupListener()
   }
+}
+
+export function compareSemverDesc(a: string, b: string): number {
+  function parse(v: string): number[] {
+    return v
+      .replace(/^v/, '')
+      .split('.')
+      .map((n) => parseInt(n, 10) || 0)
+  }
+  const aParts = parse(a)
+  const bParts = parse(b)
+
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const diff = (bParts[i] || 0) - (aParts[i] || 0)
+    if (diff !== 0) {
+      return diff
+    }
+  }
+
+  return 0
 }
