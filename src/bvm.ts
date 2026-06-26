@@ -35,9 +35,9 @@ program
   .action((version: string) => runCommand(() => installBun(version)))
 
 program
-  .command('use <version>')
-  .description('Use a specific Bun version')
-  .action((version: string) => runCommand(() => useVersion(version)))
+  .command('use [version]')
+  .description('Use a specific Bun version (interactive if omitted)')
+  .action((version?: string) => runCommand(() => useVersion(version)))
 
 program
   .command('uninstall <version>')
