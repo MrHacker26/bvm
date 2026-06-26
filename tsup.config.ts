@@ -11,4 +11,5 @@ export default defineConfig({
   outDir: 'dist',
   splitting: false,
   bundle: true,
+  external: ['update-notifier'],
 })

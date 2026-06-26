@@ -9,8 +9,12 @@ import {
   currentVersion,
 } from './commands/versions'
 import { uninstallBun } from './commands/uninstall'
+import { upgradeBvm } from './commands/upgrade'
 import { log } from './lib/logger'
+import { notifyUpdate } from './lib/update'
 import { version } from '../package.json'
+
+notifyUpdate()
 
 const program = new Command()
 
@@ -61,5 +65,10 @@ program
   .alias('r')
   .description('List remote Bun versions')
   .action(() => runCommand(listRemoteVersions))
+
+program
+  .command('upgrade')
+  .description('Show how to update bvm to the latest version')
+  .action(() => runCommand(upgradeBvm))
 
 program.parse()
