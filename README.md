@@ -10,6 +10,9 @@
 - 🔁 Switch between installed versions seamlessly
 - 📦 Uninstall versions you no longer need
 - 📃 List installed and remote Bun versions
+- 🎯 Interactive prompts for `install`, `use`, and `uninstall` (powered by [Clack](https://github.com/natemoo-re/clack))
+- 🔒 SHA-256 checksum verification before extracting downloads
+- 🐧 Smart platform detection (Apple Silicon, Alpine/musl, AVX2 baseline, Rosetta)
 - 🐚 Auto-configure shell environment (bash, zsh, fish)
 - 🧠 Lightweight and fast – built with Node.js and TypeScript
 - 🔗 Automatic symlink management for `bun` and `bunx`
@@ -19,13 +22,13 @@
 
 ## 🖥️ Platform Support
 
-| Platform | Status       | Tested                          |
-| -------- | ------------ | ------------------------------- |
-| Linux    | ✅ Supported | ✅ Tested on Ubuntu/Debian      |
-| macOS    | ✅ Supported | ✅ Tested on M2 (Apple Silicon) |
-| Windows  | ❓ Unknown   | ❓ Not tested yet               |
+| Platform | Status           | Tested                          |
+| -------- | ---------------- | ------------------------------- |
+| Linux    | ✅ Supported     | ✅ Tested on Ubuntu/Debian      |
+| macOS    | ✅ Supported     | ✅ Tested on M2 (Apple Silicon) |
+| Windows  | ❌ Not supported | ❌ Not supported yet            |
 
-**Note**: BVM has been tested on Linux and macOS (Apple Silicon). Windows support is planned but not implemented.
+**Note**: BVM supports macOS and Linux only. Windows support is not implemented.
 
 ---
 
@@ -66,14 +69,29 @@ pnpm link
 Once installed, you can use `bvm` from anywhere in your terminal:
 
 ```bash
-bvm install <version>     # Install a specific Bun version (alias: i)
+bvm install [version]     # Install a Bun version (alias: i)
 bvm install latest        # Install the latest Bun version
-bvm use <version>         # Set a specific Bun version as active
-bvm uninstall <version>   # Remove an installed version (alias: u)
+bvm use [version]         # Switch to a Bun version (interactive if omitted)
+bvm uninstall [version]   # Remove an installed version (alias: u)
 bvm current               # Display currently activated version of Bun
 bvm list                  # List installed Bun versions (alias: ls)
 bvm remote                # List available remote Bun versions (alias: r)
 bvm --help                # Show help information
+```
+
+### Interactive mode
+
+When run without a version argument in a terminal, `install`, `use`, and `uninstall` show interactive menus:
+
+- **`bvm use`** — pick from installed versions (cursor starts on your current version)
+- **`bvm install`** — pick from remote releases (latest is pre-selected; shows `installed` / `current` hints)
+- **`bvm uninstall`** — pick a version to remove, then confirm (warns if it's your active version)
+
+In non-interactive environments (CI, pipes), a version argument is required:
+
+```bash
+bvm use 1.2.5        # works in scripts
+bvm use              # errors in CI — version required
 ```
 
 ---
@@ -86,23 +104,31 @@ bvm install latest
 
 # Install a specific Bun version
 bvm install 1.0.12
-# or use alias
-bvm i 1.0.12
+bvm i 1.0.12              # alias
+
+# Interactive install — pick from remote versions
+bvm install
 
 # Switch to a specific version
 bvm use 1.0.12
 
+# Interactive switch — pick from installed versions
+bvm use
+
 # List all installed versions
 bvm list
-bvm ls              # or use alias
+bvm ls                    # alias
 
 # See what versions are available remotely
 bvm remote
-bvm r               # or use alias
+bvm r                     # alias
 
-# Remove an old version
+# Remove an old version (with confirmation prompt)
 bvm uninstall 1.0.11
-bvm u 1.0.11        # or use alias
+bvm u 1.0.11              # alias
+
+# Interactive uninstall — pick then confirm
+bvm uninstall
 ```
 
 ---
@@ -113,6 +139,7 @@ bvm u 1.0.11        # or use alias
 
 - Node.js 20+
 - pnpm (recommended) or npm
+- [Bun](https://bun.sh) (for running tests)
 
 ### Setup
 
@@ -138,6 +165,7 @@ pnpm dev
 
 - `pnpm build` - Build the project with tsup
 - `pnpm dev` - Run in development mode with tsx
+- `pnpm test` - Run unit tests with Bun
 - `pnpm clean` - Clean build directory
 - `pnpm start` - Run the built CLI
 - `pnpm format` - Format code with Prettier
@@ -150,8 +178,7 @@ pnpm dev
 
 Contributions are welcome! Please feel free to submit a Pull Request. Areas where help is needed:
 
-- Testing on macOS and Windows
-- Additional shell support
+- Testing on Linux (x64, ARM) and macOS (Intel)
 - Bug fixes and improvements
 - Documentation updates
 
