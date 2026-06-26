@@ -11,11 +11,8 @@ import {
 } from '../lib/constants'
 import { createSymlink, ensureDirectoryExists } from '../lib/file'
 import { setupCompletions } from '../lib/shell'
+import { isInteractive } from '../lib/interactive'
 import { getCurrentBunVersion, getInstalledBunVersions } from '../lib/utils'
-
-function isInteractive(): boolean {
-  return Boolean(process.stdin.isTTY && process.stdout.isTTY)
-}
 
 async function resolveVersion(version?: string): Promise<string | undefined> {
   if (version) {

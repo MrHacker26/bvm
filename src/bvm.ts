@@ -29,10 +29,10 @@ program
   .version(version)
 
 program
-  .command('install <version>')
+  .command('install [version]')
   .alias('i')
-  .description('Install a specific Bun version')
-  .action((version: string) => runCommand(() => installBun(version)))
+  .description('Install a specific Bun version (interactive if omitted)')
+  .action((version?: string) => runCommand(() => installBun(version)))
 
 program
   .command('use [version]')
@@ -40,10 +40,10 @@ program
   .action((version?: string) => runCommand(() => useVersion(version)))
 
 program
-  .command('uninstall <version>')
+  .command('uninstall [version]')
   .alias('u')
-  .description('Uninstall a specific Bun version')
-  .action((version: string) => runCommand(() => uninstallBun(version)))
+  .description('Uninstall a specific Bun version (interactive if omitted)')
+  .action((version?: string) => runCommand(() => uninstallBun(version)))
 
 program
   .command('current')

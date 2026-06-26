@@ -1,13 +1,11 @@
 import {
   formatVersionInfo,
+  fetchRemoteBunVersions,
   getCurrentBunVersion,
   getInstalledBunVersions,
 } from '../lib/utils'
-import { GITHUB_RELEASES_URL } from '../lib/constants'
 import { log } from '../lib/logger'
 import chalk from 'chalk'
-import axios from 'axios'
-import { Release } from '../lib/types'
 
 export function listVersions(): void {
   try {
@@ -34,8 +32,7 @@ export function listVersions(): void {
 
 export async function listRemoteVersions(): Promise<void> {
   try {
-    const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
-    const versions = data.map(({ tag_name }) => tag_name.replace(/^bun-v/, ''))
+    const versions = await fetchRemoteBunVersions()
 
     if (versions.length === 0) {
       log.warn('No Bun versions found remotely.')

@@ -55,14 +55,19 @@ export function getInstalledBunVersions(): string[] {
 }
 
 export async function getLatestBunVersion(): Promise<string | null> {
-  const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
+  const versions = await fetchRemoteBunVersions()
 
-  if (data.length === 0) {
+  if (versions.length === 0) {
     log.warn('No Bun versions found.')
     return null
   }
 
-  return data[0].tag_name.replace(/^bun-v/, '')
+  return versions[0]
+}
+
+export async function fetchRemoteBunVersions(): Promise<string[]> {
+  const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
+  return data.map(({ tag_name }) => tag_name.replace(/^bun-v/, ''))
 }
 
 export function formatVersionInfo(
