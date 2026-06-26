@@ -7,7 +7,7 @@ export default defineConfig({
   clean: true,
   minify: true,
   sourcemap: true,
-  target: 'node18',
+  target: 'node20',
   outDir: 'dist',
   splitting: false,
   bundle: true,

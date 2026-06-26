@@ -1,5 +1,10 @@
 import { execSync } from 'node:child_process'
-import { createReadStream, existsSync, readdirSync } from 'node:fs'
+import {
+  createReadStream,
+  existsSync,
+  readdirSync,
+  readFileSync,
+} from 'node:fs'
 import { BUN_VERSIONS_DIR, GITHUB_RELEASES_URL } from './constants'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
@@ -69,17 +74,79 @@ export function formatVersionInfo(
   return `${chalk.magenta('v' + version)} ${chalk.red('✗ (not installed)')}`
 }
 
-function getPlatformTarget(): string {
-  const targetPlatform = `${process.platform}-${process.arch}`
-
-  switch (targetPlatform) {
-    case 'darwin-arm64': {
-      return 'darwin-aarch64'
-    }
-    default: {
-      return targetPlatform
-    }
+function isRunningUnderRosetta(): boolean {
+  try {
+    return (
+      execSync('sysctl -n sysctl.proc_translated', {
+        encoding: 'utf8',
+        stdio: ['pipe'],
+      }).trim() === '1'
+    )
+  } catch {
+    return false
   }
+}
+
+// Mirrors bun.sh/install: x64 builds require AVX2, otherwise the `-baseline`
+// variant is needed. If detection fails we assume no AVX2 (baseline runs
+// everywhere, just slightly slower) to avoid "illegal instruction" crashes.
+function hasAvx2Support(): boolean {
+  try {
+    if (process.platform === 'darwin') {
+      return execSync('sysctl -a', {
+        encoding: 'utf8',
+        stdio: ['pipe'],
+      }).includes('AVX2')
+    }
+    if (process.platform === 'linux') {
+      return readFileSync('/proc/cpuinfo', 'utf8').includes('avx2')
+    }
+  } catch {
+    return false
+  }
+  return false
+}
+
+function getPlatformTarget(): string {
+  const { platform, arch } = process
+
+  let target: string
+
+  switch (`${platform}-${arch}`) {
+    case 'darwin-arm64':
+      target = 'darwin-aarch64'
+      break
+    case 'darwin-x64':
+      // A native x64 build runs under Rosetta on Apple Silicon, but the
+      // arm64 build is faster, so prefer it when translation is active.
+      target = isRunningUnderRosetta() ? 'darwin-aarch64' : 'darwin-x64'
+      break
+    case 'linux-arm64':
+      target = 'linux-aarch64'
+      break
+    case 'linux-x64':
+      target = 'linux-x64'
+      break
+    default:
+      throw new Error(
+        `Unsupported platform: ${platform}-${arch}. Only macOS and Linux are supported.`,
+      )
+  }
+
+  // Alpine (and other musl-based) Linux distros need the musl build.
+  if (target.startsWith('linux') && existsSync('/etc/alpine-release')) {
+    target += '-musl'
+  }
+
+  // x64 CPUs without AVX2 need the baseline build.
+  if (
+    (target.startsWith('darwin-x64') || target.startsWith('linux-x64')) &&
+    !hasAvx2Support()
+  ) {
+    target += '-baseline'
+  }
+
+  return target
 }
 
 function registerCleanup(dir: string): () => void {

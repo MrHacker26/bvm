@@ -6,8 +6,11 @@
     "bvm": "./dist/bvm.js"
   },
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "main": "./dist/bvm.js",
+  "module": "./dist/bvm.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/bvm.ts",

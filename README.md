@@ -111,7 +111,7 @@ bvm u 1.0.11        # or use alias
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm (recommended) or npm
 
 ### Setup
