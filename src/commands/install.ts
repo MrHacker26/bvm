@@ -16,10 +16,10 @@ import {
   getInstalledBunVersions,
   getLatestBunVersion,
 } from '../lib/utils'
-import { ensureDirectoryExists } from '../lib/file'
+import { ensureDirectoryExists, pathExists } from '../lib/file'
 import { isInteractive } from '../lib/interactive'
 import { useVersion } from './use'
-import { autoConfigureShell } from '../lib/shell'
+import { autoConfigureShell, logShellReloadHint } from '../lib/shell'
 
 export function formatInstallHint(
   version: string,
@@ -113,7 +113,7 @@ export async function installBun(version?: string): Promise<void> {
 
   const versionDir = join(BUN_VERSIONS_DIR, resolved)
   const bunBinaryPath = join(versionDir, 'bun')
-  const hasActiveSymlinks = existsSync(BUN_SYMLINK) && existsSync(BUNX_SYMLINK)
+  const hasActiveSymlinks = pathExists(BUN_SYMLINK) && pathExists(BUNX_SYMLINK)
 
   if (existsSync(versionDir) && existsSync(bunBinaryPath)) {
     log.warn(`Bun ${chalk.green(`v${resolved}`)} is already installed.`)
@@ -145,6 +145,7 @@ export async function installBun(version?: string): Promise<void> {
     }
 
     await useVersion(resolved)
+    await logShellReloadHint()
     return
   }
 
