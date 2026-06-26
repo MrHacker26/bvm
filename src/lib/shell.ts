@@ -41,9 +41,15 @@ export async function setupCompletions(): Promise<void> {
 
 function getShell(): Shell | null {
   const shellPath = process.env.SHELL ?? ''
-  if (shellPath.includes('bash')) return 'bash'
-  if (shellPath.includes('zsh')) return 'zsh'
-  if (shellPath.includes('fish')) return 'fish'
+  if (shellPath.includes('bash')) {
+    return 'bash'
+  }
+  if (shellPath.includes('zsh')) {
+    return 'zsh'
+  }
+  if (shellPath.includes('fish')) {
+    return 'fish'
+  }
   return null
 }
 

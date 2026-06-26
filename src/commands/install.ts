@@ -15,13 +15,17 @@ import { autoConfigureShell } from '../lib/shell'
 
 export async function installBun(version: string): Promise<void> {
   if (version === 'latest') {
-    const latestVersion = await getLatestBunVersion()
+    try {
+      const latestVersion = await getLatestBunVersion()
 
-    if (!latestVersion) {
-      return
+      if (!latestVersion) {
+        return
+      }
+
+      version = latestVersion
+    } catch {
+      throw new Error('Error fetching latest Bun version.')
     }
-
-    version = latestVersion
   }
 
   const versionDir = join(BUN_VERSIONS_DIR, version)

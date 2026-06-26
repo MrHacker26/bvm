@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import {
   createReadStream,
   existsSync,
@@ -16,6 +17,22 @@ import { chmod } from 'node:fs/promises'
 import { cleanPath, exists, formatBytes, streamToFile } from './file'
 import cliProgress from 'cli-progress'
 import { Release } from './types'
+
+// The platform/arch combinations bvm supports, mapped to Bun's release
+// asset naming. Suffixes like `-musl` / `-baseline` are appended at runtime.
+type BunBaseTarget =
+  | 'darwin-aarch64'
+  | 'darwin-x64'
+  | 'linux-aarch64'
+  | 'linux-x64'
+
+export type PlatformTargetOptions = {
+  platform: NodeJS.Platform
+  arch: NodeJS.Architecture
+  isAlpine?: boolean
+  hasAvx2?: boolean
+  isRosetta?: boolean
+}
 
 export function getCurrentBunVersion(): string | null {
   try {
@@ -38,21 +55,14 @@ export function getInstalledBunVersions(): string[] {
 }
 
 export async function getLatestBunVersion(): Promise<string | null> {
-  try {
-    const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
+  const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
 
-    if (data.length === 0) {
-      log.warn('No Bun versions found.')
-      return null
-    }
-
-    const latestVersion = data[0].tag_name.replace(/^bun-v/, '')
-
-    return latestVersion
-  } catch {
-    log.error('Error fetching latest Bun version.')
-    process.exit(1)
+  if (data.length === 0) {
+    log.warn('No Bun versions found.')
+    return null
   }
+
+  return data[0].tag_name.replace(/^bun-v/, '')
 }
 
 export function formatVersionInfo(
@@ -90,7 +100,7 @@ function isRunningUnderRosetta(): boolean {
 // Mirrors bun.sh/install: x64 builds require AVX2, otherwise the `-baseline`
 // variant is needed. If detection fails we assume no AVX2 (baseline runs
 // everywhere, just slightly slower) to avoid "illegal instruction" crashes.
-function hasAvx2Support(): boolean {
+function detectAvx2Support(): boolean {
   try {
     if (process.platform === 'darwin') {
       return execSync('sysctl -a', {
@@ -107,19 +117,21 @@ function hasAvx2Support(): boolean {
   return false
 }
 
-function getPlatformTarget(): string {
-  const { platform, arch } = process
-
-  let target: string
+export function resolvePlatformTarget({
+  platform,
+  arch,
+  isAlpine = false,
+  hasAvx2 = true,
+  isRosetta = false,
+}: PlatformTargetOptions): string {
+  let target: BunBaseTarget
 
   switch (`${platform}-${arch}`) {
     case 'darwin-arm64':
       target = 'darwin-aarch64'
       break
     case 'darwin-x64':
-      // A native x64 build runs under Rosetta on Apple Silicon, but the
-      // arm64 build is faster, so prefer it when translation is active.
-      target = isRunningUnderRosetta() ? 'darwin-aarch64' : 'darwin-x64'
+      target = isRosetta ? 'darwin-aarch64' : 'darwin-x64'
       break
     case 'linux-arm64':
       target = 'linux-aarch64'
@@ -133,15 +145,13 @@ function getPlatformTarget(): string {
       )
   }
 
-  // Alpine (and other musl-based) Linux distros need the musl build.
-  if (target.startsWith('linux') && existsSync('/etc/alpine-release')) {
+  if (target.startsWith('linux') && isAlpine) {
     target += '-musl'
   }
 
-  // x64 CPUs without AVX2 need the baseline build.
   if (
     (target.startsWith('darwin-x64') || target.startsWith('linux-x64')) &&
-    !hasAvx2Support()
+    !hasAvx2
   ) {
     target += '-baseline'
   }
@@ -149,11 +159,71 @@ function getPlatformTarget(): string {
   return target
 }
 
-function registerCleanup(dir: string): () => void {
-  async function cleanup() {
+function getPlatformTarget(): string {
+  return resolvePlatformTarget({
+    platform: process.platform,
+    arch: process.arch,
+    isAlpine: existsSync('/etc/alpine-release'),
+    hasAvx2: detectAvx2Support(),
+    isRosetta: isRunningUnderRosetta(),
+  })
+}
+
+export function parseChecksumForFile(
+  shasums: string,
+  fileName: string,
+): string | null {
+  for (const line of shasums.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    const [hash, ...nameParts] = trimmed.split(/\s+/)
+    const name = nameParts.join(' ')
+
+    if (name === fileName) {
+      return hash
+    }
+  }
+
+  return null
+}
+
+async function fetchExpectedChecksum(
+  version: string,
+  zipName: string,
+): Promise<string> {
+  const url = `https://github.com/oven-sh/bun/releases/download/bun-v${version}/SHASUMS256.txt`
+  const { data } = await axios.get<string>(url)
+  const expected = parseChecksumForFile(data, zipName)
+
+  if (!expected) {
+    throw new Error(`Checksum not found for ${zipName}`)
+  }
+
+  return expected
+}
+
+export async function verifyFileChecksum(
+  filePath: string,
+  expected: string,
+): Promise<void> {
+  const hash = createHash('sha256')
+  await pipeline(createReadStream(filePath), hash)
+  const actual = hash.digest('hex')
+
+  if (actual !== expected) {
+    throw new Error(
+      'Checksum mismatch — download may be corrupted or tampered.',
+    )
+  }
+}
+
+function registerCleanup(dir: string, abort: () => void): () => void {
+  function cleanup() {
     console.log(chalk.red('\nDownload interrupted. Cleaning up...'))
-    await cleanPath(dir, true)
-    process.exit(1)
+    void cleanPath(dir, true).finally(abort)
   }
 
   process.once('SIGINT', cleanup)
@@ -165,17 +235,22 @@ export async function downloadBun(
   destPath: string,
 ): Promise<void> {
   const target = getPlatformTarget()
-  const url = `https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-${target}.zip`
+  const zipName = `bun-${target}.zip`
+  const url = `https://github.com/oven-sh/bun/releases/download/bun-v${version}/${zipName}`
   const zipPath = `${destPath}.zip`
   const destDir = dirname(destPath)
   const extractedDir = join(destDir, `bun-${target}`)
   const extractedBunPath = join(extractedDir, 'bun')
+  const controller = new AbortController()
 
-  const removeCleanupListener = registerCleanup(destDir)
+  const removeCleanupListener = registerCleanup(destDir, () => {
+    controller.abort()
+  })
 
   try {
     const response = await axios.get<NodeJS.ReadableStream>(url, {
       responseType: 'stream',
+      signal: controller.signal,
     })
 
     if (response.status !== 200) {
@@ -212,7 +287,13 @@ export async function downloadBun(
     })
 
     await streamToFile(response.data, zipPath)
-    if (total) progress.stop()
+    if (total) {
+      progress.stop()
+    }
+
+    log.log(chalk.yellow('🔒 Verifying checksum...'))
+    const expectedChecksum = await fetchExpectedChecksum(version, zipName)
+    await verifyFileChecksum(zipPath, expectedChecksum)
 
     log.log(chalk.yellow('📦 Extracting...'))
 
@@ -233,11 +314,12 @@ export async function downloadBun(
 
     log.success(`Downloaded Bun ${chalk.bold(`v${version}`)}`)
   } catch (error) {
-    log.error(
-      `Failed to install Bun: ${error instanceof Error ? error.message : error}`,
-    )
+    if (controller.signal.aborted) {
+      throw new Error('Download interrupted.')
+    }
+
     await cleanPath(destDir, true)
-    process.exit(1)
+    throw error
   } finally {
     removeCleanupListener()
   }

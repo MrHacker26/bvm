@@ -14,4 +14,10 @@ export default defineConfig([
     languageOptions: { globals: globals.node },
   },
   tseslint.configs.recommended,
+  {
+    files: ['**/*.{js,mjs,cjs,ts}'],
+    rules: {
+      curly: ['error', 'all'],
+    },
+  },
 ])

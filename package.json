@@ -20,6 +20,7 @@
     "format": "prettier --write --ignore-path .gitignore --cache .",
     "lint": "eslint --ext .ts src --cache",
     "lint:fix": "eslint --ext .ts src --cache --fix",
+    "test": "bun test",
     "release": "pnpm lint && pnpm format && pnpm version patch && git push --follow-tags && pnpm publish",
     "release:minor": "pnpm version minor && git push --follow-tags && pnpm publish",
     "release:major": "pnpm version major && git push --follow-tags && pnpm publish"
