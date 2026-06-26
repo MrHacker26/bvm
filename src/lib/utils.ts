@@ -10,6 +10,7 @@ import { BUN_VERSIONS_DIR, GITHUB_RELEASES_URL } from './constants'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
 import { Readable } from 'node:stream'
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 import { log } from './logger'
 import { pipeline } from 'node:stream/promises'
 import unzipper from 'unzipper'
@@ -288,7 +289,7 @@ async function downloadZipWithProgress(
   }
 
   const stream = Readable.fromWeb(
-    response.body as Parameters<typeof Readable.fromWeb>[0],
+    response.body as unknown as NodeReadableStream,
   )
 
   stream.on('data', (chunk: Buffer) => {
