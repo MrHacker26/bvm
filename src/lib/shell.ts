@@ -1,6 +1,7 @@
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { log } from './logger'
+import chalk from 'chalk'
 import { readFile, writeFile } from 'node:fs/promises'
 import {
   BUN_COMPLETION_FILE,
@@ -164,4 +165,39 @@ export async function autoConfigureShell(): Promise<void> {
   }
 
   await configureShell(shell)
+}
+
+export async function logShellReloadHint(): Promise<void> {
+  const shell = getShell()
+
+  log.log('')
+  log.info('To start using bun, run:')
+
+  if (!shell) {
+    log.log(`  ${chalk.cyan('Restart your terminal')}`)
+    log.log(`  ${chalk.cyan('bun --help')}`)
+    return
+  }
+
+  let reloadCommand: string | null = null
+
+  if (shell === 'zsh') {
+    reloadCommand = `exec ${process.env.SHELL ?? 'zsh'}`
+  } else if (shell === 'fish') {
+    reloadCommand = `source ${FISH_CONFIG_PATH}`
+  } else if (shell === 'bash') {
+    const configPaths = getShellConfigPath(shell)
+    for (const configPath of configPaths) {
+      if (await exists(configPath)) {
+        reloadCommand = `source ${configPath}`
+        break
+      }
+    }
+  }
+
+  if (reloadCommand) {
+    log.log(`  ${chalk.cyan(reloadCommand)}`)
+  }
+
+  log.log(`  ${chalk.cyan('bun --help')}`)
 }
