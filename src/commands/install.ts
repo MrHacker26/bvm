@@ -21,7 +21,7 @@ import { isInteractive } from '../lib/interactive'
 import { useVersion } from './use'
 import { autoConfigureShell } from '../lib/shell'
 
-function formatInstallHint(
+export function formatInstallHint(
   version: string,
   latest: string,
   installed: Set<string>,
