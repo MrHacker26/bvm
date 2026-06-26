@@ -65,8 +65,19 @@ export function ensureDirectoryExists(dir: string): void {
   }
 }
 
+// Unlike existsSync, this detects dangling symlinks (links whose target no
+// longer exists), since lstat inspects the link itself instead of following it.
+export function pathExists(path: string): boolean {
+  try {
+    lstatSync(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function removeExistingLink(path: string): void {
-  if (existsSync(path)) {
+  if (pathExists(path)) {
     const isSymlink = lstatSync(path).isSymbolicLink()
     try {
       rmSync(path, { force: true })

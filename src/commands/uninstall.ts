@@ -3,9 +3,30 @@ import { existsSync, readlinkSync, rmSync } from 'node:fs'
 import { confirm, isCancel, select } from '@clack/prompts'
 import chalk from 'chalk'
 import { log } from '../lib/logger'
-import { BUN_SYMLINK, BUN_VERSIONS_DIR } from '../lib/constants'
+import { BUN_SYMLINK, BUN_VERSIONS_DIR, BUNX_SYMLINK } from '../lib/constants'
+import { pathExists } from '../lib/file'
 import { isInteractive } from '../lib/interactive'
 import { getCurrentBunVersion, getInstalledBunVersions } from '../lib/utils'
+
+// Removes a symlink only when it points at the binary being uninstalled.
+// Uses pathExists so dangling links are still cleaned up.
+function removeSymlinkIfPointsTo(symlink: string, binaryPath: string): boolean {
+  if (!pathExists(symlink)) {
+    return false
+  }
+
+  try {
+    const target = resolve(readlinkSync(symlink))
+    if (target === resolve(binaryPath)) {
+      rmSync(symlink, { force: true })
+      return true
+    }
+  } catch {
+    // Ignore readlinkSync errors (e.g. not a symlink).
+  }
+
+  return false
+}
 
 async function resolveVersion(version?: string): Promise<string | undefined> {
   if (version) {
@@ -87,16 +108,11 @@ export async function uninstallBun(version?: string): Promise<void> {
     return
   }
 
-  if (existsSync(BUN_SYMLINK)) {
-    try {
-      const target = resolve(readlinkSync(BUN_SYMLINK))
-      if (target === resolve(bunBinaryPath)) {
-        rmSync(BUN_SYMLINK, { force: true })
-        log.log(`🔗 Removed active symlink for Bun ${resolved}.`)
-      }
-    } catch {
-      // Ignore readlinkSync errors.
-    }
+  const bunRemoved = removeSymlinkIfPointsTo(BUN_SYMLINK, bunBinaryPath)
+  const bunxRemoved = removeSymlinkIfPointsTo(BUNX_SYMLINK, bunBinaryPath)
+
+  if (bunRemoved || bunxRemoved) {
+    log.log(`🔗 Removed active symlinks for Bun ${resolved}.`)
   }
 
   try {
