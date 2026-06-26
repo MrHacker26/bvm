@@ -235,6 +235,75 @@ function registerCleanup(dir: string, abort: () => void): () => void {
   return () => process.removeListener('SIGINT', cleanup)
 }
 
+async function downloadZipWithProgress(
+  url: string,
+  zipPath: string,
+  signal: AbortSignal,
+): Promise<void> {
+  const response = await axios.get<NodeJS.ReadableStream>(url, {
+    responseType: 'stream',
+    signal,
+  })
+
+  if (response.status !== 200) {
+    throw new Error(`Failed to download ZIP file. Status: ${response.status}`)
+  }
+
+  const total = Number(response.headers['content-length']) || 0
+  let downloaded = 0
+  const progress = new cliProgress.SingleBar(
+    {
+      format: `${chalk.magenta('Downloading')} {bar} {percentage}% | {downloaded}/{totalSize}`,
+      barCompleteChar: '█',
+      barIncompleteChar: '░',
+      hideCursor: true,
+    },
+    cliProgress.Presets.shades_classic,
+  )
+
+  if (total) {
+    progress.start(total, 0, {
+      downloaded: '0 B',
+      totalSize: formatBytes(total),
+    })
+  }
+
+  response.data.on('data', (chunk: Buffer) => {
+    downloaded += chunk.length
+    if (total) {
+      progress.update(downloaded, {
+        downloaded: formatBytes(downloaded),
+        totalSize: formatBytes(total),
+      })
+    }
+  })
+
+  await streamToFile(response.data, zipPath)
+  if (total) {
+    progress.stop()
+  }
+}
+
+async function extractBunBinary(
+  zipPath: string,
+  destPath: string,
+  destDir: string,
+  extractedDir: string,
+  extractedBunPath: string,
+): Promise<void> {
+  await pipeline(createReadStream(zipPath), unzipper.Extract({ path: destDir }))
+
+  if (!(await exists(extractedBunPath))) {
+    throw new Error(`Expected binary not found at ${extractedBunPath}`)
+  }
+
+  await streamToFile(createReadStream(extractedBunPath), destPath)
+  await chmod(destPath, 0o755)
+
+  await cleanPath(extractedDir, true)
+  await cleanPath(zipPath)
+}
+
 export async function downloadBun(
   version: string,
   destPath: string,
@@ -253,69 +322,20 @@ export async function downloadBun(
   })
 
   try {
-    const response = await axios.get<NodeJS.ReadableStream>(url, {
-      responseType: 'stream',
-      signal: controller.signal,
-    })
-
-    if (response.status !== 200) {
-      throw new Error(`Failed to download ZIP file. Status: ${response.status}`)
-    }
-
-    const total = Number(response.headers['content-length']) || 0
-    let downloaded = 0
-    const progress = new cliProgress.SingleBar(
-      {
-        format: `${chalk.magenta('Downloading')} {bar} {percentage}% | {downloaded}/{totalSize}`,
-        barCompleteChar: '█',
-        barIncompleteChar: '░',
-        hideCursor: true,
-      },
-      cliProgress.Presets.shades_classic,
-    )
-
-    if (total) {
-      progress.start(total, 0, {
-        downloaded: '0 B',
-        totalSize: formatBytes(total),
-      })
-    }
-
-    response.data.on('data', (chunk: Buffer) => {
-      downloaded += chunk.length
-      if (total) {
-        progress.update(downloaded, {
-          downloaded: formatBytes(downloaded),
-          totalSize: formatBytes(total),
-        })
-      }
-    })
-
-    await streamToFile(response.data, zipPath)
-    if (total) {
-      progress.stop()
-    }
+    await downloadZipWithProgress(url, zipPath, controller.signal)
 
     log.log(chalk.yellow('🔒 Verifying checksum...'))
     const expectedChecksum = await fetchExpectedChecksum(version, zipName)
     await verifyFileChecksum(zipPath, expectedChecksum)
 
     log.log(chalk.yellow('📦 Extracting...'))
-
-    await pipeline(
-      createReadStream(zipPath),
-      unzipper.Extract({ path: destDir }),
+    await extractBunBinary(
+      zipPath,
+      destPath,
+      destDir,
+      extractedDir,
+      extractedBunPath,
     )
-
-    if (!(await exists(extractedBunPath))) {
-      throw new Error(`Expected binary not found at ${extractedBunPath}`)
-    }
-
-    await streamToFile(createReadStream(extractedBunPath), destPath)
-    await chmod(destPath, 0o755)
-
-    await cleanPath(extractedDir, true)
-    await cleanPath(zipPath)
 
     log.success(`Downloaded Bun ${chalk.bold(`v${version}`)}`)
   } catch (error) {
