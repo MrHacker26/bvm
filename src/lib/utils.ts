@@ -9,7 +9,7 @@ import {
 import { BUN_VERSIONS_DIR, GITHUB_RELEASES_URL } from './constants'
 import chalk from 'chalk'
 import { dirname, join } from 'node:path'
-import axios from 'axios'
+import { Readable } from 'node:stream'
 import { log } from './logger'
 import { pipeline } from 'node:stream/promises'
 import unzipper from 'unzipper'
@@ -17,6 +17,28 @@ import { chmod } from 'node:fs/promises'
 import { cleanPath, exists, formatBytes, streamToFile } from './file'
 import cliProgress from 'cli-progress'
 import { Release } from './types'
+
+const REQUEST_HEADERS = { 'User-Agent': 'bvm-cli' }
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { headers: REQUEST_HEADERS })
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${url}`)
+  }
+
+  return (await response.json()) as T
+}
+
+async function fetchText(url: string): Promise<string> {
+  const response = await fetch(url, { headers: REQUEST_HEADERS })
+
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}) for ${url}`)
+  }
+
+  return response.text()
+}
 
 // The platform/arch combinations bvm supports, mapped to Bun's release
 // asset naming. Suffixes like `-musl` / `-baseline` are appended at runtime.
@@ -66,7 +88,7 @@ export async function getLatestBunVersion(): Promise<string | null> {
 }
 
 export async function fetchRemoteBunVersions(): Promise<string[]> {
-  const { data } = await axios.get<Release[]>(GITHUB_RELEASES_URL)
+  const data = await fetchJson<Release[]>(GITHUB_RELEASES_URL)
   return data.map(({ tag_name }) => tag_name.replace(/^bun-v/, ''))
 }
 
@@ -200,7 +222,7 @@ async function fetchExpectedChecksum(
   zipName: string,
 ): Promise<string> {
   const url = `https://github.com/oven-sh/bun/releases/download/bun-v${version}/SHASUMS256.txt`
-  const { data } = await axios.get<string>(url)
+  const data = await fetchText(url)
   const expected = parseChecksumForFile(data, zipName)
 
   if (!expected) {
@@ -240,16 +262,13 @@ async function downloadZipWithProgress(
   zipPath: string,
   signal: AbortSignal,
 ): Promise<void> {
-  const response = await axios.get<NodeJS.ReadableStream>(url, {
-    responseType: 'stream',
-    signal,
-  })
+  const response = await fetch(url, { signal })
 
-  if (response.status !== 200) {
+  if (!response.ok || !response.body) {
     throw new Error(`Failed to download ZIP file. Status: ${response.status}`)
   }
 
-  const total = Number(response.headers['content-length']) || 0
+  const total = Number(response.headers.get('content-length')) || 0
   let downloaded = 0
   const progress = new cliProgress.SingleBar(
     {
@@ -268,7 +287,11 @@ async function downloadZipWithProgress(
     })
   }
 
-  response.data.on('data', (chunk: Buffer) => {
+  const stream = Readable.fromWeb(
+    response.body as Parameters<typeof Readable.fromWeb>[0],
+  )
+
+  stream.on('data', (chunk: Buffer) => {
     downloaded += chunk.length
     if (total) {
       progress.update(downloaded, {
@@ -278,7 +301,7 @@ async function downloadZipWithProgress(
     }
   })
 
-  await streamToFile(response.data, zipPath)
+  await streamToFile(stream, zipPath)
   if (total) {
     progress.stop()
   }
