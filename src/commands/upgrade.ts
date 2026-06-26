@@ -12,7 +12,7 @@ const UPGRADE_COMMANDS = [
 export function upgradeBvm(): void {
   log.log(`Current bvm version: ${chalk.green(`v${version}`)}`)
   log.log('')
-  log.info('To update bvm, run one of:')
+  log.log('To update bvm, run one of:')
   log.log('')
 
   for (const { manager, command } of UPGRADE_COMMANDS) {

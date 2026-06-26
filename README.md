@@ -14,6 +14,7 @@
 - 🔒 SHA-256 checksum verification before extracting downloads
 - 🐧 Smart platform detection (Apple Silicon, Alpine/musl, AVX2 baseline, Rosetta)
 - 🐚 Auto-configure shell environment (bash, zsh, fish)
+- 🔔 Update notifications when a newer bvm release is available
 - 🧠 Lightweight and fast – built with Node.js and TypeScript
 - 🔗 Automatic symlink management for `bun` and `bunx`
 - ✨ Command completions support
@@ -76,6 +77,7 @@ bvm uninstall [version]   # Remove an installed version (alias: u)
 bvm current               # Display currently activated version of Bun
 bvm list                  # List installed Bun versions (alias: ls)
 bvm remote                # List available remote Bun versions (alias: r)
+bvm upgrade               # Show how to update bvm itself
 bvm --help                # Show help information
 ```
 
@@ -93,6 +95,16 @@ In non-interactive environments (CI, pipes), a version argument is required:
 bvm use 1.2.5        # works in scripts
 bvm use              # errors in CI — version required
 ```
+
+### Updating bvm
+
+BVM checks for newer releases in the background (at most once a day) and shows a notification when an update is available. To see how to update:
+
+```bash
+bvm upgrade
+```
+
+This prints the update command for each package manager (npm, pnpm, yarn, bun) — it does not modify anything itself. To disable the update check, set `NO_UPDATE_NOTIFIER=1`.
 
 ---
 
@@ -129,6 +141,9 @@ bvm u 1.0.11              # alias
 
 # Interactive uninstall — pick then confirm
 bvm uninstall
+
+# See how to update bvm itself
+bvm upgrade
 ```
 
 ---
