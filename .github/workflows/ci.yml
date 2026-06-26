@@ -47,7 +47,7 @@ jobs:
         run: pnpm lint
 
       - name: Check code formatting
-        run: pnpm exec prettier --check --ignore-path .gitignore .
+        run: pnpm exec prettier --check .
 
       - name: Build project
         run: pnpm build
