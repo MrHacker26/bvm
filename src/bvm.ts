@@ -35,12 +35,16 @@ program
 program
   .command('install [version]')
   .alias('i')
-  .description('Install a specific Bun version (interactive if omitted)')
+  .description(
+    'Install a Bun version (uses .bun-version or interactive selection if omitted)',
+  )
   .action((version?: string) => runCommand(() => installBun(version)))
 
 program
   .command('use [version]')
-  .description('Use a specific Bun version (interactive if omitted)')
+  .description(
+    'Use a Bun version (uses .bun-version or interactive selection if omitted)',
+  )
   .action((version?: string) => runCommand(() => useVersion(version)))
 
 program

@@ -7,7 +7,7 @@
 ## 🚀 Features
 
 - 📥 Install any version of Bun
-- 🔁 Switch between installed versions seamlessly
+- 🔁 Switch between installed versions seamlessly, supports `.bun-version`
 - 📦 Uninstall versions you no longer need
 - 📃 List installed and remote Bun versions
 - 🎯 Interactive prompts for `install`, `use`, and `uninstall` (powered by [Clack](https://github.com/natemoo-re/clack))
@@ -72,7 +72,7 @@ Once installed, you can use `bvm` from anywhere in your terminal:
 ```bash
 bvm install [version]     # Install a Bun version (alias: i)
 bvm install latest        # Install the latest Bun version
-bvm use [version]         # Switch to a Bun version (interactive if omitted)
+bvm use [version]         # Switch to a Bun version
 bvm uninstall [version]   # Remove an installed version (alias: u)
 bvm current               # Display currently activated version of Bun
 bvm list                  # List installed Bun versions (alias: ls)
@@ -81,19 +81,31 @@ bvm upgrade               # Show how to update bvm itself
 bvm --help                # Show help information
 ```
 
+### Project versions
+
+Add a `.bun-version` file to your project to pin its Bun version:
+
+```bash
+echo "1.4.4" > .bun-version
+bvm install              # Install the project's version
+bvm use                  # Switch to the project's installed version
+```
+
+When no version argument is supplied, `bvm install` and `bvm use` look for `.bun-version` in the project root directory (or any parent directory). Whitespace and an optional `v` prefix are accepted (for example, `v1.2.5`). `latest` is also supported by `bvm install`; `bvm use` requires an installed version.
+
 ### Interactive mode
 
-When run without a version argument in a terminal, `install`, `use`, and `uninstall` show interactive menus:
+When run without a version argument in a terminal, `install` and `use` show interactive menus if no `.bun-version` is found. `uninstall` always uses a menu when its version is omitted:
 
 - **`bvm use`** — pick from installed versions (cursor starts on your current version)
 - **`bvm install`** — pick from remote releases (latest is pre-selected; shows `installed` / `current` hints)
 - **`bvm uninstall`** — pick a version to remove, then confirm (warns if it's your active version)
 
-In non-interactive environments (CI, pipes), a version argument is required:
+In non-interactive environments (CI, pipes), `install` and `use` require either a version argument or a `.bun-version` file. `uninstall` requires an argument:
 
 ```bash
 bvm use 1.2.5        # works in scripts
-bvm use              # errors in CI — version required
+bvm use              # reads .bun-version; errors in CI if no file is found
 ```
 
 ### Updating bvm

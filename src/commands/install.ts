@@ -16,7 +16,7 @@ import {
   getInstalledBunVersions,
   getLatestBunVersion,
 } from '../lib/utils'
-import { ensureDirectoryExists, pathExists } from '../lib/file'
+import { ensureDirectoryExists, pathExists, readBunVersion } from '../lib/file'
 import { isInteractive } from '../lib/interactive'
 import { useVersion } from './use'
 import { autoConfigureShell, logShellReloadHint } from '../lib/shell'
@@ -43,6 +43,8 @@ export function formatInstallHint(
 }
 
 async function resolveVersion(version?: string): Promise<string | undefined> {
+  version = version ?? readBunVersion()
+
   if (version) {
     if (version === 'latest') {
       try {

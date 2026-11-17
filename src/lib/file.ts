@@ -3,11 +3,52 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   symlinkSync,
 } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { rm, stat, unlink } from 'node:fs/promises'
 import { log } from './logger'
+
+export function readBunVersion(startDir = process.cwd()): string | undefined {
+  let directory = resolve(startDir)
+
+  while (true) {
+    const versionFile = join(directory, '.bun-version')
+    let contents: string
+
+    try {
+      contents = readFileSync(versionFile, 'utf8')
+    } catch (error) {
+      if (
+        !(error instanceof Error && 'code' in error && error.code === 'ENOENT')
+      ) {
+        throw error
+      }
+
+      const parent = dirname(directory)
+      if (parent === directory) {
+        return undefined
+      }
+      directory = parent
+      continue
+    }
+
+    const version = contents.trim().replace(/^v/, '')
+    if (
+      !/^(?:latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/.test(
+        version,
+      )
+    ) {
+      throw new Error(
+        `Invalid Bun version in ${versionFile}. Expected a version such as 1.4.4 or latest.`,
+      )
+    }
+
+    return version
+  }
+}
 
 export async function streamToFile(
   readable: NodeJS.ReadableStream,
