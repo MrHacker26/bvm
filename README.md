@@ -29,7 +29,7 @@
 | macOS    | ✅ Supported     | ✅ Tested on M2 (Apple Silicon) |
 | Windows  | ❌ Not supported | ❌ Not supported yet            |
 
-**Note**: BVM supports macOS and Linux only. Windows support is not implemented.
+**Note**: BVM supports macOS and Linux only. Native Windows (`win32`) is not supported: BVM exits with `Unsupported platform: win32-x64. Only macOS and Linux are supported.` On Windows, run BVM inside [WSL](https://learn.microsoft.com/windows/wsl/install), where Node.js reports `linux` as the platform and BVM uses its Linux code path. WSL is not part of the tested platforms above.
 
 ---
 
