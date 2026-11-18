@@ -9,12 +9,18 @@ import {
   BUN_VERSIONS_DIR,
   BUNX_SYMLINK,
 } from '../lib/constants'
-import { createSymlink, ensureDirectoryExists } from '../lib/file'
+import {
+  createSymlink,
+  ensureDirectoryExists,
+  readBunVersion,
+} from '../lib/file'
 import { setupCompletions } from '../lib/shell'
 import { isInteractive } from '../lib/interactive'
 import { getCurrentBunVersion, getInstalledBunVersions } from '../lib/utils'
 
 async function resolveVersion(version?: string): Promise<string | undefined> {
+  version = version ?? readBunVersion()
+
   if (version) {
     return version
   }
