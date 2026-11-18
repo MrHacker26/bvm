@@ -21,16 +21,6 @@ import { Release } from './types'
 
 const REQUEST_HEADERS = { 'User-Agent': 'bvm-cli' }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { headers: REQUEST_HEADERS })
-
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}) for ${url}`)
-  }
-
-  return (await response.json()) as T
-}
-
 async function fetchText(url: string): Promise<string> {
   const response = await fetch(url, { headers: REQUEST_HEADERS })
 
@@ -89,27 +79,81 @@ export async function getLatestBunVersion(): Promise<string | null> {
 }
 
 export async function fetchRemoteBunVersions(): Promise<string[]> {
-  const data = await fetchJson<Release[]>(GITHUB_RELEASES_URL)
+  const response = await fetch(`${GITHUB_RELEASES_URL}?per_page=100`, {
+    headers: REQUEST_HEADERS,
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Request failed (${response.status}) for ${GITHUB_RELEASES_URL}`,
+    )
+  }
+
+  const data = (await response.json()) as Release[]
   return data.map(({ tag_name }) => tag_name.replace(/^bun-v/, ''))
 }
 
-export function formatVersionInfo(
+export type VersionStatus = 'current' | 'installed' | 'available'
+
+export function getVersionStatus(
   version: string,
   currentVersion: string | null,
   installedVersions: Set<string>,
+): VersionStatus {
+  if (version === currentVersion) {
+    return 'current'
+  }
+  if (installedVersions.has(version)) {
+    return 'installed'
+  }
+  return 'available'
+}
+
+export function formatVersionStatus(
+  status: VersionStatus,
+  width = status.length,
 ): string {
-  const isActive = currentVersion === version
-  const isInstalled = installedVersions.has(version)
+  const padded = status.padEnd(width)
 
-  if (isActive) {
-    return `${chalk.magenta('v' + version)} ${chalk.yellow('⭐ (current)')}`
+  switch (status) {
+    case 'current':
+      return chalk.yellow(padded)
+    case 'installed':
+      return chalk.green(padded)
+    case 'available':
+      return chalk.dim(padded)
   }
+}
 
-  if (isInstalled) {
-    return `${chalk.magenta('v' + version)} ${chalk.green('✓ (installed)')}`
-  }
+export function formatVersionsTable(
+  versions: string[],
+  currentVersion: string | null,
+  installedVersions: Set<string>,
+): string {
+  const rows = versions.map((version) => ({
+    version: `v${version}`,
+    status: getVersionStatus(version, currentVersion, installedVersions),
+  }))
 
-  return `${chalk.magenta('v' + version)} ${chalk.red('✗ (not installed)')}`
+  const versionHeader = 'VERSION'
+  const statusHeader = 'STATUS'
+  const versionWidth = Math.max(
+    versionHeader.length,
+    ...rows.map((row) => row.version.length),
+  )
+  const statusWidth = Math.max(
+    statusHeader.length,
+    ...rows.map((row) => row.status.length),
+  )
+
+  return [
+    `${versionHeader.padEnd(versionWidth)}  ${statusHeader.padEnd(statusWidth)}`,
+    `${'─'.repeat(versionWidth)}  ${'─'.repeat(statusWidth)}`,
+    ...rows.map(
+      (row) =>
+        `${chalk.magenta(row.version.padEnd(versionWidth))}  ${formatVersionStatus(row.status, statusWidth)}`,
+    ),
+  ].join('\n')
 }
 
 function isRunningUnderRosetta(): boolean {

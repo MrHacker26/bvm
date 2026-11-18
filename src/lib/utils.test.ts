@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
   compareSemverDesc,
-  formatVersionInfo,
+  formatVersionsTable,
+  getVersionStatus,
   parseChecksumForFile,
   resolvePlatformTarget,
 } from './utils'
@@ -25,20 +26,40 @@ describe('compareSemverDesc', () => {
   })
 })
 
-describe('formatVersionInfo', () => {
-  test('marks the active version', () => {
-    const output = formatVersionInfo('1.0.0', '1.0.0', new Set(['1.0.0']))
-    expect(output).toContain('(current)')
+describe('getVersionStatus', () => {
+  test('marks the active version as current', () => {
+    expect(getVersionStatus('1.0.0', '1.0.0', new Set(['1.0.0']))).toBe(
+      'current',
+    )
   })
 
   test('marks installed versions', () => {
-    const output = formatVersionInfo('1.0.0', '1.0.1', new Set(['1.0.0']))
-    expect(output).toContain('(installed)')
+    expect(getVersionStatus('1.0.0', '1.0.1', new Set(['1.0.0']))).toBe(
+      'installed',
+    )
   })
 
-  test('marks remote-only versions', () => {
-    const output = formatVersionInfo('1.0.0', '1.0.1', new Set(['1.0.1']))
-    expect(output).toContain('(not installed)')
+  test('marks remote-only versions as available', () => {
+    expect(getVersionStatus('1.0.0', '1.0.1', new Set(['1.0.1']))).toBe(
+      'available',
+    )
+  })
+})
+
+describe('formatVersionsTable', () => {
+  test('renders aligned version and status columns', () => {
+    const table = formatVersionsTable(
+      ['1.2.5', '1.2.4', '1.2.3'],
+      '1.2.5',
+      new Set(['1.2.5', '1.2.4']),
+    )
+
+    expect(table).toContain('VERSION')
+    expect(table).toContain('STATUS')
+    expect(table).toContain('v1.2.5')
+    expect(table).toContain('current')
+    expect(table).toContain('installed')
+    expect(table).toContain('available')
   })
 })
 

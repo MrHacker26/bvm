@@ -76,7 +76,7 @@ bvm use [version]         # Switch to a Bun version
 bvm uninstall [version]   # Remove an installed version (alias: u)
 bvm current               # Display currently activated version of Bun
 bvm list                  # List installed Bun versions (alias: ls)
-bvm remote                # List available remote Bun versions (alias: r)
+bvm remote                # List remote Bun versions (alias: r)
 bvm upgrade               # Show how to update bvm itself
 bvm --help                # Show help information
 ```
@@ -95,11 +95,12 @@ When no version argument is supplied, `bvm install` and `bvm use` look for `.bun
 
 ### Interactive mode
 
-When run without a version argument in a terminal, `install` and `use` show interactive menus if no `.bun-version` is found. `uninstall` always uses a menu when its version is omitted:
+When run without a version argument in a terminal, `install` and `use` show interactive menus if no `.bun-version` is found. `uninstall` and `remote` also use menus when run interactively:
 
 - **`bvm use`** — pick from installed versions (cursor starts on your current version)
 - **`bvm install`** — pick from remote releases (latest is pre-selected; shows `installed` / `current` hints)
 - **`bvm uninstall`** — pick a version to remove, then confirm (warns if it's your active version)
+- **`bvm remote`** — browse remote releases and confirm to install or switch (prints a table in CI/pipes)
 
 In non-interactive environments (CI, pipes), `install` and `use` require either a version argument or a `.bun-version` file. `uninstall` requires an argument:
 
