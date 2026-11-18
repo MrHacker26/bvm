@@ -11,42 +11,100 @@ import { dirname, join, resolve } from 'node:path'
 import { rm, stat, unlink } from 'node:fs/promises'
 import { log } from './logger'
 
+const BUN_VERSION_PATTERN =
+  /^(?:latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/
+
+function normalizeBunVersion(raw: string): string | undefined {
+  const version = raw.trim().replace(/^v/, '')
+  return BUN_VERSION_PATTERN.test(version) ? version : undefined
+}
+
+function readBunVersionFile(directory: string): string | undefined {
+  const versionFile = join(directory, '.bun-version')
+  let contents: string
+
+  try {
+    contents = readFileSync(versionFile, 'utf8')
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      return undefined
+    }
+    throw error
+  }
+
+  const version = normalizeBunVersion(contents)
+  if (!version) {
+    throw new Error(
+      `Invalid Bun version in ${versionFile}. Expected a version such as 1.4.4 or latest.`,
+    )
+  }
+
+  return version
+}
+
+function readPackageJsonBunVersion(directory: string): string | undefined {
+  const packageFile = join(directory, 'package.json')
+  let raw: string
+
+  try {
+    raw = readFileSync(packageFile, 'utf8')
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      return undefined
+    }
+    throw error
+  }
+
+  let pkg: { packageManager?: unknown; engines?: { bun?: unknown } }
+  try {
+    pkg = JSON.parse(raw) as {
+      packageManager?: unknown
+      engines?: { bun?: unknown }
+    }
+  } catch {
+    throw new Error(`Invalid JSON in ${packageFile}`)
+  }
+
+  if (typeof pkg.packageManager === 'string') {
+    const match = pkg.packageManager.match(/^bun@([^+]+)/)
+    if (match) {
+      const version = normalizeBunVersion(match[1])
+      if (!version) {
+        throw new Error(
+          `Invalid Bun version in ${packageFile} (packageManager). Expected bun@1.4.4.`,
+        )
+      }
+      return version
+    }
+  }
+
+  if (typeof pkg.engines?.bun === 'string') {
+    return normalizeBunVersion(pkg.engines.bun)
+  }
+
+  return undefined
+}
+
+/** Resolve project Bun version: `.bun-version`, then `package.json`, walking parents. */
 export function readBunVersion(startDir = process.cwd()): string | undefined {
   let directory = resolve(startDir)
 
   while (true) {
-    const versionFile = join(directory, '.bun-version')
-    let contents: string
-
-    try {
-      contents = readFileSync(versionFile, 'utf8')
-    } catch (error) {
-      if (
-        !(error instanceof Error && 'code' in error && error.code === 'ENOENT')
-      ) {
-        throw error
-      }
-
-      const parent = dirname(directory)
-      if (parent === directory) {
-        return undefined
-      }
-      directory = parent
-      continue
+    const fromFile = readBunVersionFile(directory)
+    if (fromFile !== undefined) {
+      return fromFile
     }
 
-    const version = contents.trim().replace(/^v/, '')
-    if (
-      !/^(?:latest|\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)$/.test(
-        version,
-      )
-    ) {
-      throw new Error(
-        `Invalid Bun version in ${versionFile}. Expected a version such as 1.4.4 or latest.`,
-      )
+    const fromPackage = readPackageJsonBunVersion(directory)
+    if (fromPackage !== undefined) {
+      return fromPackage
     }
 
-    return version
+    const parent = dirname(directory)
+    if (parent === directory) {
+      return undefined
+    }
+    directory = parent
   }
 }
 

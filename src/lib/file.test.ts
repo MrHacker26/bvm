@@ -66,6 +66,63 @@ describe('readBunVersion', () => {
     mkdirSync(join(directory, '.bun-version'))
     expect(() => readBunVersion(directory)).toThrow()
   })
+
+  test('reads packageManager bun version from package.json', () => {
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({ packageManager: 'bun@1.2.5+sha512.abc' }),
+    )
+    expect(readBunVersion(directory)).toBe('1.2.5')
+  })
+
+  test('reads exact engines.bun when packageManager is absent', () => {
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({ engines: { bun: 'v1.2.5' } }),
+    )
+    expect(readBunVersion(directory)).toBe('1.2.5')
+  })
+
+  test('prefers .bun-version over package.json in the same directory', () => {
+    writeFileSync(join(directory, '.bun-version'), '1.2.5')
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({ packageManager: 'bun@1.0.0' }),
+    )
+    expect(readBunVersion(directory)).toBe('1.2.5')
+  })
+
+  test('prefers packageManager over engines.bun', () => {
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({
+        packageManager: 'bun@1.2.5',
+        engines: { bun: '1.0.0' },
+      }),
+    )
+    expect(readBunVersion(directory)).toBe('1.2.5')
+  })
+
+  test('ignores engines.bun ranges and keeps walking', () => {
+    const child = join(directory, 'project')
+    mkdirSync(child)
+    writeFileSync(
+      join(child, 'package.json'),
+      JSON.stringify({ engines: { bun: '>=1.2.0' } }),
+    )
+    writeFileSync(join(directory, '.bun-version'), '1.2.5')
+    expect(readBunVersion(child)).toBe('1.2.5')
+  })
+
+  test('finds package.json version in a parent directory', () => {
+    const child = join(directory, 'src')
+    mkdirSync(child)
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({ packageManager: 'bun@1.2.5' }),
+    )
+    expect(readBunVersion(child)).toBe('1.2.5')
+  })
 })
 
 describe('formatBytes', () => {

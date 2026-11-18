@@ -83,15 +83,24 @@ bvm --help                # Show help information
 
 ### Project versions
 
-Add a `.bun-version` file to your project to pin its Bun version:
+Pin a Bun version with `.bun-version` or `package.json`:
 
 ```bash
 echo "1.4.4" > .bun-version
+# or in package.json: "packageManager": "bun@1.4.4"
+# or in package.json: "engines": { "bun": "1.4.4" }
+
 bvm install              # Install the project's version
 bvm use                  # Switch to the project's installed version
 ```
 
-When no version argument is supplied, `bvm install` and `bvm use` look for `.bun-version` in the project root directory (or any parent directory). Whitespace and an optional `v` prefix are accepted (for example, `v1.2.5`). `latest` is also supported by `bvm install`; `bvm use` requires an installed version.
+When no version argument is supplied, `bvm install` and `bvm use` look in the current directory (then parents) for:
+
+1. `.bun-version`
+2. `packageManager: "bun@…"` (integrity suffix after `+` is ignored)
+3. exact `engines.bun` (ranges like `>=1.2.0` are ignored)
+
+Whitespace and an optional `v` prefix are accepted (for example, `v1.2.5`). `latest` is also supported by `bvm install`; `bvm use` requires an installed version.
 
 ### Interactive mode
 
